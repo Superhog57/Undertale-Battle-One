@@ -358,9 +358,9 @@ function drawBoss() {
 
     // Boss name
     ctx.fillStyle = "white";
-    ctx.font = "28px Courier New";
+    ctx.font = "26px Courier New";
     ctx.textAlign = "center";
-    ctx.fillText("VOIDLING", boss.x, boss.y - 50);
+    ctx.fillText("VOIDLING", boss.x, boss.y - 40);
 
     // Boss sprite
     ctx.fillStyle = "white";
@@ -375,13 +375,13 @@ function drawBoss() {
     ctx.fillRect(boss.x - 12, boss.y + 6, 24, 10);
 
     // ============================
-    // FIXED HP BAR (ALWAYS VISIBLE)
+    // ⭐ GUARANTEED VISIBLE HP BAR
     // ============================
 
-    const barX = 80;
-    const barY = 100;   // LOWERED so it ALWAYS shows
-    const barW = 640;
-    const barH = 22;
+    const barX = box.x + 20;
+    const barY = box.y - 40;   // RIGHT ABOVE THE BOX
+    const barW = box.w - 40;
+    const barH = 20;
 
     const hpPercent = boss.hp / boss.maxHP;
     const hpWidth = barW * hpPercent;
@@ -395,12 +395,11 @@ function drawBoss() {
     ctx.fillStyle = "yellow";
     ctx.fillRect(barX, barY, hpWidth, barH);
 
-    // HP TEXT (moved DOWN so it’s visible)
+    // HP TEXT
     ctx.fillStyle = "white";
-    ctx.font = "20px Courier New";
-    ctx.fillText(`HP: ${boss.hp} / ${boss.maxHP}`, barX + barW / 2, barY - 10);
+    ctx.font = "18px Courier New";
+    ctx.fillText(`HP: ${boss.hp} / ${boss.maxHP}`, barX + barW / 2, barY - 8);
 }
-
 
 // =========================
 // DRAW BOX
