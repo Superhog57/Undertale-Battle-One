@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Undertale Battle</title>
+  <style>
+    body {
+      background: black;
+      color: white;
+      font-family: "Courier New", monospace;
+      margin: 0;
+      overflow: hidden;
+    }
+    #game {
+      display: block;
+      margin: 0 auto;
+      background: black;
+      border: 2px solid white;
+    }
+    #ui {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 40px;
+      width: 400px;
+      text-align: center;
+      color: white;
+    }
+    .buttons {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 10px;
+    }
+    button {
+      background: black;
+      color: white;
+      border: 2px solid white;
+      padding: 4px 10px;
+      cursor: pointer;
+      font-family: "Courier New", monospace;
+    }
+    button:focus {
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+<canvas id="game" width="400" height="300"></canvas>
+<div id="ui">
+  <div id="status">HP: <span id="hp">20</span> / 20</div>
+  <div id="text"></div>
+  <div class="buttons">
+    <button id="fight">FIGHT</button>
+    <button id="act">ACT</button>
+    <button id="item">ITEM</button>
+    <button id="mercy">MERCY</button>
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+
+  const hpSpan = document.getElementById("hp");
+  const textBox = document.getElementById("text");
+
+  const btnFight = document.getElementById("fight");
+  const btnAct = document.getElementById("act");
+  const btnItem = document.getElementById("item");
+  const btnMercy = document.getElementById("mercy");
+
+  // Player soul (heart) inside the box
+  const soul = {
+    x: 200,
+    y: 200,
+    size: 8,
+    speed: 3
+  };
+
+  // Bullet pattern (simple white bullets)
+  const bullets = [];
+  const bulletSpeed = 2;
+
+  // Battle box
+  const box = {
+    x: 80,
+    y: 80,
+    w: 240,
+    h: 140
+  };
+
+  let keys = {};
+  let playerHP = 20;
+  let enemyHP = 30;
+  let inAttackPhase = false;
+  let attackTimer = 0;
+  let attackDuration = 200; // frames
+
+  function setText(msg) {
+    textBox.textContent = msg;
+  }
+
+  function resetBullets() {
+    bullets.length = 0;
+    for (let i = 0; i < 10; i++) {
+      bullets.push({
+        x: box.x + Math.random() * box.w,
+        y: box.y - 10,
+        r: 4
+      });
+    }
+  }
+
+  function startEnemyAttack() {
+    inAttackPhase = true;
+    attackTimer = 0;
+    resetBullets();
+    setText("Enemy attacks!");
+  }
+
+  function endEnemyAttack() {
+    inAttackPhase = false;
+    setText("What will you do?");
+  }
+
+  function drawBox() {
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(box.x, box.y, box.w, box.h);
+  }
+
+  function drawSoul() {
+    ctx.fillStyle = "red";
+    ctx.beginPath();
+    ctx.moveTo(soul.x, soul.y);
+    ctx.arc(soul.x - 3, soul.y - 3, soul.size / 2, 0, Math.PI * 2);
+    ctx.arc(soul.x + 3, soul.y - 3, soul.size / 2, 0, Math.PI * 2);
+    ctx.lineTo(soul.x, soul.y + soul.size);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawBullets() {
+    ctx.fillStyle = "white";
+    bullets.forEach(b => {
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  function updateSoul() {
+    if (!inAttackPhase) return;
+
+    if (keys["ArrowLeft"]) soul.x -= soul.speed;
+    if (keys["ArrowRight"]) soul.x += soul.speed;
+    if (keys["ArrowUp"]) soul.y -= soul.speed;
+    if (keys["ArrowDown"]) soul.y += soul.speed;
+
+    // Clamp to box
+    if (soul.x < box.x + soul.size) soul.x = box.x + soul.size;
+    if (soul.x > box.x + box.w - soul.size) soul.x = box.x + box.w - soul.size;
+    if (soul.y < box.y + soul.size) soul.y = box.y + soul.size;
+    if (soul.y > box.y + box.h - soul.size) soul.y = box.y + box.h - soul.size;
+  }
+
+  function updateBullets() {
+    if (!inAttackPhase) return;
+
+    bullets.forEach(b => {
+      b.y += bulletSpeed;
+      if (b.y > box.y + box.h + 10) {
+        b.y = box.y - 10;
+        b.x = box.x + Math.random() * box.w;
+      }
+
+      // Collision with soul
+      const dx = b.x - soul.x;
+      const dy = b.y - soul.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < b.r + soul.size / 2) {
+        takeDamage(1);
+      }
+    });
+  }
+
+  function takeDamage(amount) {
+    playerHP -= amount;
+    if (playerHP < 0) playerHP = 0;
+    hpSpan.textContent = playerHP;
+    if (playerHP <= 0) {
+      setText("You died.");
+      inAttackPhase = false;
+    }
+  }
+
+  function enemyTakeDamage(amount) {
+    enemyHP -= amount;
+    if (enemyHP < 0) enemyHP = 0;
+    if (enemyHP <= 0) {
+      setText("You won!");
+      inAttackPhase = false;
+    } else {
+      startEnemyAttack();
+    }
+  }
+
+  function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawBox();
+    drawSoul();
+    drawBullets();
+
+    updateSoul();
+    updateBullets();
+
+    if (inAttackPhase) {
+      attackTimer++;
+      if (attackTimer > attackDuration) {
+        endEnemyAttack();
+      }
+    }
+
+    requestAnimationFrame(gameLoop);
+  }
+
+  // Input
+  window.addEventListener("keydown", e => {
+    keys[e.key] = true;
+  });
+  window.addEventListener("keyup", e => {
+    keys[e.key] = false;
+  });
+
+  // Buttons
+  btnFight.onclick = () => {
+    if (inAttackPhase || playerHP <= 0 || enemyHP <= 0) return;
+    setText("You attack!");
+    enemyTakeDamage(5);
+  };
+
+  btnAct.onclick = () => {
+    if (inAttackPhase || playerHP <= 0 || enemyHP <= 0) return;
+    setText("You talk. The enemy seems confused.");
+    startEnemyAttack();
+  };
+
+  btnItem.onclick = () => {
+    if (inAttackPhase || playerHP <= 0 || enemyHP <= 0) return;
+    if (playerHP >= 20) {
+      setText("You have no need for items.");
+      return;
+    }
+    setText("You used a healing item.");
+    playerHP += 10;
+    if (playerHP > 20) playerHP = 20;
+    hpSpan.textContent = playerHP;
+    startEnemyAttack();
+  };
+
+  btnMercy.onclick = () => {
+    if (inAttackPhase || playerHP <= 0 || enemyHP <= 0) return;
+    if (enemyHP <= 10) {
+      setText("You spare the enemy. Battle over.");
+      inAttackPhase = false;
+    } else {
+      setText("The enemy refuses to be spared.");
+      startEnemyAttack();
+    }
+  };
+
+  // Init
+  setText("A wild enemy appears.");
+  gameLoop();
+</script>
+</body>
+</html>
