@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Undertale Battle Engine - Final Clean Version</title>
+<title>Undertale Engine - Final Working Version</title>
 <style>
     body {
         background: black;
@@ -86,7 +86,6 @@ const btnMercy = document.getElementById("mercy");
 // =========================
 let battleStarted = false;
 let playerHP = 20;
-let playerDead = false;
 
 let keys = {};
 
@@ -138,16 +137,15 @@ function resetGame() {
     attackActive = false;
     currentAttack = null;
     battleStarted = false;
-    playerDead = false;
 
     setText("Press START to begin.");
 }
 
 // =========================
-// START / RESTART
+// START BATTLE
 // =========================
 btnStart.onclick = () => {
-    if (battleStarted || playerDead) return;
+    if (battleStarted) return;
     battleStarted = true;
     setText("The battle begins!");
     startAttack();
@@ -156,16 +154,14 @@ btnStart.onclick = () => {
 btnRestart.onclick = () => resetGame();
 
 // =========================
-// BUTTONS (BLOCKED WHEN DEAD)
+// PLAYER BUTTONS
 // =========================
 btnFight.onclick = () => {
-    if (playerDead) return;
     if (!battleStarted || attackActive) return;
     boss.hp -= 25;
     if (boss.hp <= 0) {
         boss.hp = 0;
         setText("You defeated the boss!");
-        attackActive = false;
         return;
     }
     setText("You attack!");
@@ -173,14 +169,12 @@ btnFight.onclick = () => {
 };
 
 btnAct.onclick = () => {
-    if (playerDead) return;
     if (!battleStarted || attackActive) return;
     setText("You tell a joke. The boss ignores you.");
     startAttack();
 };
 
 btnItem.onclick = () => {
-    if (playerDead) return;
     if (!battleStarted || attackActive) return;
     if (playerHP < 20) {
         playerHP += 8;
@@ -194,7 +188,6 @@ btnItem.onclick = () => {
 };
 
 btnMercy.onclick = () => {
-    if (playerDead) return;
     if (!battleStarted || attackActive) return;
     if (boss.hp <= 40) {
         setText("You spared the boss.");
@@ -299,16 +292,12 @@ function checkHit(x, y, w, h) {
 }
 
 function takeDamage(n) {
-    if (playerDead) return;
-
     playerHP -= n;
     if (playerHP < 0) playerHP = 0;
     hpSpan.textContent = playerHP;
-
     if (playerHP <= 0) {
         setText("You died.");
         attackActive = false;
-        playerDead = true;
     }
 }
 
@@ -319,7 +308,7 @@ window.addEventListener("keydown", e => keys[e.key] = true);
 window.addEventListener("keyup", e => keys[e.key] = false);
 
 function updateSoul() {
-    if (!attackActive || playerDead) return;
+    if (!attackActive) return;
 
     if (keys["ArrowLeft"]) soul.x -= soul.speed;
     if (keys["ArrowRight"]) soul.x += soul.speed;
@@ -340,4 +329,106 @@ function drawSoul() {
 
     ctx.fillStyle = "red";
 
-    ctx
+    ctx.fillRect(px - 3*s, py - 2*s, 2*s, 2*s);
+    ctx.fillRect(px + s, py - 2*s, 2*s, 2*s);
+
+    ctx.fillRect(px - 4*s, py - s, 4*s, 2*s);
+    ctx.fillRect(px, py - s, 4*s, 2*s);
+
+    ctx.fillRect(px - 4*s, py + s, 8*s, 2*s);
+
+    ctx.fillRect(px - 3*s, py + 3*s, 6*s, 2*s);
+
+    ctx.fillRect(px - 2*s, py + 5*s, 4*s, 2*s);
+}
+
+// =========================
+// DRAW BOSS + HP BAR
+// =========================
+function drawBoss() {
+    // Move boss
+    boss.x += boss.dir * 2;
+    if (boss.x < 160 || boss.x > canvas.width - 160) boss.dir *= -1;
+
+    // Boss name
+    ctx.fillStyle = "white";
+    ctx.font = "26px Courier New";
+    ctx.textAlign = "center";
+    ctx.fillText("VOIDLING", boss.x, boss.y - 40);
+
+    // Boss sprite
+    ctx.fillStyle = "white";
+    ctx.fillRect(boss.x - 32, boss.y - 32, 64, 64);
+
+    // Eyes
+    ctx.fillStyle = "black";
+    ctx.fillRect(boss.x - 18, boss.y - 18, 12, 12);
+    ctx.fillRect(boss.x + 6, boss.y - 18, 12, 12);
+
+    // Mouth
+    ctx.fillRect(boss.x - 12, boss.y + 6, 24, 10);
+
+    // HP BAR (Guaranteed visible)
+    const barX = 100;
+    const barY = 80;
+    const barW = 600;
+    const barH = 20;
+
+    const hpPercent = boss.hp / boss.maxHP;
+    const hpWidth = barW * hpPercent;
+
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(barX, barY, barW, barH);
+
+    ctx.fillStyle = "yellow";
+    ctx.fillRect(barX, barY, hpWidth, barH);
+
+    ctx.fillStyle = "white";
+    ctx.font = "20px Courier New";
+    ctx.fillText(`HP: ${boss.hp} / ${boss.maxHP}`, barX + barW / 2, barY - 10);
+}
+
+// =========================
+// DRAW BOX
+// =========================
+function drawBox() {
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(box.x, box.y, box.w, box.h);
+}
+
+// =========================
+// GAME LOOP
+// =========================
+function loop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawBoss();
+    drawBox();
+    drawSoul();
+
+    if (attackActive) {
+        attackTimer++;
+
+        if (currentAttack === "rain") {
+            updateRain();
+            drawRain();
+        }
+        if (currentAttack === "wave") {
+            updateWave();
+            drawWave();
+        }
+
+        if (attackTimer > 240) endAttack();
+    }
+
+    updateSoul();
+    requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+
+</body>
+</html>
