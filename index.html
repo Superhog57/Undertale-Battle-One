@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Undertale Battle Engine - NEW</title>
+<title>Undertale Battle Engine - Fixed Version</title>
 <style>
     body {
         background: black;
@@ -203,6 +203,7 @@ btnMercy.onclick = () => {
 // =========================
 // ATTACK SYSTEM
 // =========================
+// ⭐ Bone Wall REMOVED
 const attackList = ["rain", "wave"];
 
 function startAttack() {
@@ -325,7 +326,7 @@ function updateSoul() {
 }
 
 // =========================
-// DRAW SOUL (NEW HEART)
+// DRAW SOUL (HEART FIXED)
 // =========================
 function drawSoul() {
     const px = Math.round(soul.x);
@@ -348,6 +349,27 @@ function drawSoul() {
 }
 
 // =========================
+// DRAW BOSS (FIXED)
+// =========================
+function drawBoss() {
+    boss.x += boss.dir * 2;
+    if (boss.x < 160 || boss.x > canvas.width - 160) boss.dir *= -1;
+
+    ctx.fillStyle = "white";
+    ctx.font = "26px Courier New";
+    ctx.textAlign = "center";
+    ctx.fillText("BOSS", boss.x, boss.y - 32);
+
+    ctx.fillStyle = "white";
+    ctx.fillRect(boss.x - 32, boss.y - 32, 64, 64);
+
+    ctx.fillStyle = "black";
+    ctx.fillRect(boss.x - 20, boss.y - 20, 16, 16);
+    ctx.fillRect(boss.x + 4, boss.y - 20, 16, 16);
+    ctx.fillRect(boss.x - 12, boss.y + 4, 24, 12);
+}
+
+// =========================
 // DRAW BOX
 // =========================
 function drawBox() {
@@ -362,6 +384,7 @@ function drawBox() {
 function loop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    drawBoss();
     drawBox();
     drawSoul();
 
