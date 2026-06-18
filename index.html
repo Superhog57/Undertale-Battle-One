@@ -375,13 +375,13 @@ function drawBoss() {
     ctx.fillRect(boss.x - 12, boss.y + 6, 24, 10);
 
     // ============================
-    // ⭐ GUARANTEED VISIBLE HP BAR
+    // ⭐ HP BAR AT THE BOTTOM
     // ============================
 
-    const barX = box.x + 20;
-    const barY = box.y - 40;   // RIGHT ABOVE THE BOX
-    const barW = box.w - 40;
+    const barW = 600;
     const barH = 20;
+    const barX = (canvas.width - barW) / 2;
+    const barY = canvas.height - 140; // safely above UI buttons
 
     const hpPercent = boss.hp / boss.maxHP;
     const hpWidth = barW * hpPercent;
@@ -397,8 +397,8 @@ function drawBoss() {
 
     // HP TEXT
     ctx.fillStyle = "white";
-    ctx.font = "18px Courier New";
-    ctx.fillText(`HP: ${boss.hp} / ${boss.maxHP}`, barX + barW / 2, barY - 8);
+    ctx.font = "20px Courier New";
+    ctx.fillText(`HP: ${boss.hp} / ${boss.maxHP}`, barX + barW / 2, barY - 10);
 }
 
 // =========================
