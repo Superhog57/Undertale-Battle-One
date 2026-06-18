@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Undertale Battle Engine (Big)</title>
+<title>Undertale Battle Engine (800x600)</title>
 <style>
     body {
         background: black;
@@ -22,7 +22,7 @@
         left: 50%;
         transform: translateX(-50%);
         bottom: 40px;
-        width: 640px;
+        width: 800px;
         text-align: center;
         color: white;
     }
@@ -46,7 +46,7 @@
 </head>
 <body>
 
-<canvas id="game" width="640" height="480"></canvas>
+<canvas id="game" width="800" height="600"></canvas>
 
 <div id="ui">
     <div id="status">HP: <span id="hp">20</span> / 20</div>
@@ -86,9 +86,9 @@ const soulColors = {
 
 const soul = {
     x: canvas.width / 2,
-    y: canvas.height / 2 + 40,
-    size: 10,
-    speed: 4,
+    y: canvas.height / 2 + 60,
+    size: 12,
+    speed: 5,
     vy: 0
 };
 
@@ -97,15 +97,15 @@ const boss = {
     hp: 120,
     maxHP: 120,
     x: canvas.width / 2,
-    y: 120,
+    y: 140,
     dir: 1
 };
 
 const box = {
-    x: 160,
-    y: 180,
-    w: 320,
-    h: 200
+    x: 200,
+    y: 220,
+    w: 400,
+    h: 240
 };
 
 const bullets = [];
@@ -113,7 +113,7 @@ let keys = {};
 let playerHP = 20;
 let inAttackPhase = false;
 let attackTimer = 0;
-let attackDuration = 240;
+let attackDuration = 260;
 
 function setText(msg) {
     textBox.textContent = msg;
@@ -121,11 +121,11 @@ function setText(msg) {
 
 function resetBullets() {
     bullets.length = 0;
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 22; i++) {
         bullets.push({
             x: box.x + Math.random() * box.w,
-            y: box.y - 10,
-            r: 6,
+            y: box.y - 20,
+            r: 7,
             type: Math.random() < 0.33 ? "white" : (Math.random() < 0.5 ? "blue" : "orange")
         });
     }
@@ -153,26 +153,26 @@ function drawSoul() {
     ctx.fillStyle = soulColors[soulMode];
     ctx.beginPath();
     ctx.moveTo(soul.x, soul.y);
-    ctx.arc(soul.x - 4, soul.y - 4, soul.size / 2, 0, Math.PI * 2);
-    ctx.arc(soul.x + 4, soul.y - 4, soul.size / 2, 0, Math.PI * 2);
+    ctx.arc(soul.x - 5, soul.y - 5, soul.size / 2, 0, Math.PI * 2);
+    ctx.arc(soul.x + 5, soul.y - 5, soul.size / 2, 0, Math.PI * 2);
     ctx.lineTo(soul.x, soul.y + soul.size);
     ctx.closePath();
     ctx.fill();
 }
 
 function drawBoss() {
-    boss.x += boss.dir * 1.5;
-    if (boss.x < 120 || boss.x > canvas.width - 120) {
+    boss.x += boss.dir * 2;
+    if (boss.x < 160 || boss.x > canvas.width - 160) {
         boss.dir *= -1;
     }
 
     ctx.fillStyle = "white";
-    ctx.font = "24px Courier New";
+    ctx.font = "26px Courier New";
     ctx.textAlign = "center";
-    ctx.fillText(boss.name, boss.x, boss.y - 30);
+    ctx.fillText(boss.name, boss.x, boss.y - 32);
 
     ctx.beginPath();
-    ctx.arc(boss.x, boss.y, 28, 0, Math.PI * 2);
+    ctx.arc(boss.x, boss.y, 32, 0, Math.PI * 2);
     ctx.strokeStyle = "white";
     ctx.lineWidth = 2;
     ctx.stroke();
@@ -180,9 +180,9 @@ function drawBoss() {
 
 function drawBossHP() {
     const barX = 80;
-    const barY = 40;
+    const barY = 50;
     const barW = canvas.width - 160;
-    const barH = 16;
+    const barH = 18;
 
     const hpPercent = boss.hp / boss.maxHP;
     const hpWidth = barW * hpPercent;
@@ -194,9 +194,9 @@ function drawBossHP() {
     ctx.fillRect(barX, barY, hpWidth, barH);
 
     ctx.fillStyle = "white";
-    ctx.font = "16px Courier New";
+    ctx.font = "18px Courier New";
     ctx.textAlign = "center";
-    ctx.fillText(`HP: ${boss.hp}/${boss.maxHP}`, barX + barW / 2, barY - 6);
+    ctx.fillText(`HP: ${boss.hp}/${boss.maxHP}`, barX + barW / 2, barY - 8);
 }
 
 function drawBullets() {
@@ -213,9 +213,9 @@ function updateSoul() {
     if (!inAttackPhase) return;
 
     if (soulMode === "blue") {
-        soul.vy += 0.25;
+        soul.vy += 0.3;
         soul.y += soul.vy;
-        if (keys["ArrowUp"]) soul.vy = -5;
+        if (keys["ArrowUp"]) soul.vy = -6;
     } else {
         if (keys["ArrowLeft"]) soul.x -= soul.speed;
         if (keys["ArrowRight"]) soul.x += soul.speed;
@@ -231,9 +231,9 @@ function updateBullets() {
     if (!inAttackPhase) return;
 
     bullets.forEach(b => {
-        b.y += 3;
-        if (b.y > box.y + box.h + 20) {
-            b.y = box.y - 20;
+        b.y += 3.5;
+        if (b.y > box.y + box.h + 30) {
+            b.y = box.y - 30;
             b.x = box.x + Math.random() * box.w;
         }
 
