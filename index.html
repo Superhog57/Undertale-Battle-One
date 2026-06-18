@@ -192,18 +192,6 @@ function setupBeamLine() {
     });
 }
 
-function setupBoneWall() {
-    for (let i = 0; i < 5; i++) {
-        bones.push({
-            x: box.x + box.w + 200 + i * 80,
-            y: box.y,
-            w: 48,
-            h: box.h,
-            dir: -1
-        });
-    }
-}
-
 function drawBox() {
     ctx.strokeStyle = "white";
     ctx.lineWidth = 2;
