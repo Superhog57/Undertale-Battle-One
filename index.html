@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Undertale Battle Engine (800x600)</title>
+<title>Undertale Battle Engine - Pixel Boss</title>
 <style>
     body {
         background: black;
@@ -52,12 +52,15 @@
     <div id="status">HP: <span id="hp">20</span> / 20</div>
     <div id="text"></div>
     <div class="buttons">
+        <button id="start">START</button>
         <button id="fight">FIGHT</button>
         <button id="act">ACT</button>
         <button id="item">ITEM</button>
         <button id="mercy">MERCY</button>
     </div>
 </div>
+
+<audio id="music" src="battle.ogg" loop></audio>
 
 <script>
 const canvas = document.getElementById("game");
@@ -66,10 +69,15 @@ const ctx = canvas.getContext("2d");
 const hpSpan = document.getElementById("hp");
 const textBox = document.getElementById("text");
 
+const btnStart = document.getElementById("start");
 const btnFight = document.getElementById("fight");
 const btnAct = document.getElementById("act");
 const btnItem = document.getElementById("item");
 const btnMercy = document.getElementById("mercy");
+
+const music = document.getElementById("music");
+
+let battleStarted = false;
 
 let soulMode = "red";
 
@@ -85,8 +93,8 @@ const soulColors = {
 };
 
 const soul = {
-    x: canvas.width / 2,
-    y: canvas.height / 2 + 60,
+    x: 400,
+    y: 360,
     size: 12,
     speed: 5,
     vy: 0
@@ -96,7 +104,7 @@ const boss = {
     name: "VOIDLING",
     hp: 120,
     maxHP: 120,
-    x: canvas.width / 2,
+    x: 400,
     y: 140,
     dir: 1
 };
@@ -108,39 +116,92 @@ const box = {
     h: 240
 };
 
-const bullets = [];
 let keys = {};
 let playerHP = 20;
 let inAttackPhase = false;
 let attackTimer = 0;
-let attackDuration = 260;
+let attackDuration = 220;
+
+let currentAttack = null;
+let bullets = [];
+let bones = [];
+let beams = [];
+
+const attackTypes = ["boneWave", "bulletRain", "beamLine", "boneWall"];
 
 function setText(msg) {
     textBox.textContent = msg;
 }
 
-function resetBullets() {
-    bullets.length = 0;
-    for (let i = 0; i < 22; i++) {
-        bullets.push({
-            x: box.x + Math.random() * box.w,
-            y: box.y - 20,
-            r: 7,
-            type: Math.random() < 0.33 ? "white" : (Math.random() < 0.5 ? "blue" : "orange")
-        });
-    }
+function clearAttacks() {
+    bullets = [];
+    bones = [];
+    beams = [];
 }
 
 function startEnemyAttack() {
     inAttackPhase = true;
     attackTimer = 0;
-    resetBullets();
-    setText(boss.name + " attacks!");
+    clearAttacks();
+    currentAttack = attackTypes[Math.floor(Math.random() * attackTypes.length)];
+    setText(boss.name + " uses " + currentAttack + "!");
+    if (currentAttack === "bulletRain") setupBulletRain();
+    if (currentAttack === "boneWave") setupBoneWave();
+    if (currentAttack === "beamLine") setupBeamLine();
+    if (currentAttack === "boneWall") setupBoneWall();
 }
 
 function endEnemyAttack() {
     inAttackPhase = false;
+    currentAttack = null;
+    clearAttacks();
     setText("What will you do?");
+}
+
+function setupBulletRain() {
+    for (let i = 0; i < 18; i++) {
+        bullets.push({
+            x: box.x + Math.random() * box.w,
+            y: box.y - 40 - Math.random() * 200,
+            size: 36,
+            type: Math.random() < 0.33 ? "white" : (Math.random() < 0.5 ? "blue" : "orange")
+        });
+    }
+}
+
+function setupBoneWave() {
+    for (let i = 0; i < 6; i++) {
+        bones.push({
+            x: box.x - 200 - i * 120,
+            y: box.y + 40 + i * 20,
+            w: 48,
+            h: 192,
+            dir: 1
+        });
+    }
+}
+
+function setupBeamLine() {
+    beams.push({
+        x: box.x,
+        y: box.y + box.h / 2 - 30,
+        w: box.w,
+        h: 60,
+        type: Math.random() < 0.5 ? "blue" : "orange",
+        warning: 60
+    });
+}
+
+function setupBoneWall() {
+    for (let i = 0; i < 5; i++) {
+        bones.push({
+            x: box.x + box.w + 200 + i * 80,
+            y: box.y,
+            w: 48,
+            h: box.h,
+            dir: -1
+        });
+    }
 }
 
 function drawBox() {
@@ -151,31 +212,34 @@ function drawBox() {
 
 function drawSoul() {
     ctx.fillStyle = soulColors[soulMode];
-    ctx.beginPath();
-    ctx.moveTo(soul.x, soul.y);
-    ctx.arc(soul.x - 5, soul.y - 5, soul.size / 2, 0, Math.PI * 2);
-    ctx.arc(soul.x + 5, soul.y - 5, soul.size / 2, 0, Math.PI * 2);
-    ctx.lineTo(soul.x, soul.y + soul.size);
-    ctx.closePath();
-    ctx.fill();
+    const s = 4;
+    const x = Math.round(soul.x);
+    const y = Math.round(soul.y);
+    // pixel heart (fixed, symmetric)
+    ctx.fillRect(x - 3 * s, y - 2 * s, 2 * s, 2 * s);
+    ctx.fillRect(x + s, y - 2 * s, 2 * s, 2 * s);
+    ctx.fillRect(x - 4 * s, y - s, 4 * s, 2 * s);
+    ctx.fillRect(x, y - s, 4 * s, 2 * s);
+    ctx.fillRect(x - 4 * s, y + s, 8 * s, 2 * s);
+    ctx.fillRect(x - 3 * s, y + 3 * s, 6 * s, 2 * s);
+    ctx.fillRect(x - 2 * s, y + 5 * s, 4 * s, 2 * s);
 }
 
 function drawBoss() {
     boss.x += boss.dir * 2;
-    if (boss.x < 160 || boss.x > canvas.width - 160) {
-        boss.dir *= -1;
-    }
+    if (boss.x < 160 || boss.x > canvas.width - 160) boss.dir *= -1;
 
     ctx.fillStyle = "white";
     ctx.font = "26px Courier New";
     ctx.textAlign = "center";
     ctx.fillText(boss.name, boss.x, boss.y - 32);
 
-    ctx.beginPath();
-    ctx.arc(boss.x, boss.y, 32, 0, Math.PI * 2);
-    ctx.strokeStyle = "white";
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    ctx.fillStyle = "white";
+    ctx.fillRect(boss.x - 32, boss.y - 32, 64, 64);
+    ctx.fillStyle = "black";
+    ctx.fillRect(boss.x - 20, boss.y - 20, 16, 16);
+    ctx.fillRect(boss.x + 4, boss.y - 20, 16, 16);
+    ctx.fillRect(boss.x - 12, boss.y + 4, 24, 12);
 }
 
 function drawBossHP() {
@@ -199,14 +263,107 @@ function drawBossHP() {
     ctx.fillText(`HP: ${boss.hp}/${boss.maxHP}`, barX + barW / 2, barY - 8);
 }
 
-function drawBullets() {
+function drawBulletRain() {
     bullets.forEach(b => {
         ctx.fillStyle = b.type === "blue" ? "#0000ff" :
                         b.type === "orange" ? "#ff8000" : "white";
-        ctx.beginPath();
-        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillRect(b.x - b.size / 2, b.y - b.size / 2, b.size, b.size);
     });
+}
+
+function updateBulletRain() {
+    bullets.forEach(b => {
+        b.y += 3.5;
+        if (b.y > box.y + box.h + 60) {
+            b.y = box.y - 200;
+            b.x = box.x + Math.random() * box.w;
+        }
+        checkBulletCollision(b);
+    });
+}
+
+function drawBoneWave() {
+    ctx.fillStyle = "white";
+    bones.forEach(b => {
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+    });
+}
+
+function updateBoneWave() {
+    bones.forEach(b => {
+        b.x += 4;
+        if (b.x > box.x + box.w + 200) {
+            b.x = box.x - 200;
+        }
+        checkBoneCollision(b);
+    });
+}
+
+function drawBeamLine() {
+    beams.forEach(be => {
+        if (be.warning > 0) {
+            ctx.strokeStyle = be.type === "blue" ? "#0000ff" : "#ff8000";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(be.x, be.y, be.w, be.h);
+        } else {
+            ctx.fillStyle = be.type === "blue" ? "#0000ff" : "#ff8000";
+            ctx.fillRect(be.x, be.y, be.w, be.h);
+        }
+    });
+}
+
+function updateBeamLine() {
+    beams.forEach(be => {
+        if (be.warning > 0) {
+            be.warning--;
+        } else {
+            checkBeamCollision(be);
+        }
+    });
+}
+
+function drawBoneWall() {
+    ctx.fillStyle = "white";
+    bones.forEach(b => {
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+    });
+}
+
+function updateBoneWall() {
+    bones.forEach(b => {
+        b.x += b.dir * 4;
+        checkBoneCollision(b);
+    });
+}
+
+function checkBulletCollision(b) {
+    const half = b.size / 2;
+    const sx = soul.x;
+    const sy = soul.y;
+    if (sx > b.x - half && sx < b.x + half && sy > b.y - half && sy < b.y + half) {
+        const moving = keys["ArrowUp"] || keys["ArrowDown"] || keys["ArrowLeft"] || keys["ArrowRight"];
+        if (b.type === "blue" && !moving) takeDamage(1);
+        else if (b.type === "orange" && moving) takeDamage(1);
+        else if (b.type === "white") takeDamage(1);
+    }
+}
+
+function checkBoneCollision(b) {
+    const sx = soul.x;
+    const sy = soul.y;
+    if (sx > b.x && sx < b.x + b.w && sy > b.y && sy < b.y + b.h) {
+        takeDamage(1);
+    }
+}
+
+function checkBeamCollision(be) {
+    const sx = soul.x;
+    const sy = soul.y;
+    const moving = keys["ArrowUp"] || keys["ArrowDown"] || keys["ArrowLeft"] || keys["ArrowRight"];
+    if (sx > be.x && sx < be.x + be.w && sy > be.y && sy < be.y + be.h) {
+        if (be.type === "blue" && !moving) takeDamage(1);
+        else if (be.type === "orange" && moving) takeDamage(1);
+    }
 }
 
 function updateSoul() {
@@ -223,35 +380,8 @@ function updateSoul() {
         if (keys["ArrowDown"]) soul.y += soul.speed;
     }
 
-    soul.x = Math.max(box.x + soul.size, Math.min(soul.x, box.x + box.w - soul.size));
-    soul.y = Math.max(box.y + soul.size, Math.min(soul.y, box.y + box.h - soul.size));
-}
-
-function updateBullets() {
-    if (!inAttackPhase) return;
-
-    bullets.forEach(b => {
-        b.y += 3.5;
-        if (b.y > box.y + box.h + 30) {
-            b.y = box.y - 30;
-            b.x = box.x + Math.random() * box.w;
-        }
-
-        const dx = b.x - soul.x;
-        const dy = b.y - soul.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        if (dist < b.r + soul.size / 2) {
-            const moving = keys["ArrowUp"] || keys["ArrowDown"] || keys["ArrowLeft"] || keys["ArrowRight"];
-            if (b.type === "blue" && !moving) {
-                takeDamage(1);
-            } else if (b.type === "orange" && moving) {
-                takeDamage(1);
-            } else if (b.type === "white") {
-                takeDamage(1);
-            }
-        }
-    });
+    soul.x = Math.max(box.x + 20, Math.min(soul.x, box.x + box.w - 20));
+    soul.y = Math.max(box.y + 20, Math.min(soul.y, box.y + box.h - 20));
 }
 
 function takeDamage(amount) {
@@ -261,16 +391,19 @@ function takeDamage(amount) {
     if (playerHP <= 0) {
         setText("You died.");
         inAttackPhase = false;
+        currentAttack = null;
+        clearAttacks();
     }
 }
 
 function enemyTakeDamage(amount) {
     boss.hp -= amount;
     if (boss.hp < 0) boss.hp = 0;
-
     if (boss.hp <= 0) {
         setText("You defeated " + boss.name + "!");
         inAttackPhase = false;
+        currentAttack = null;
+        clearAttacks();
     } else {
         startEnemyAttack();
     }
@@ -283,10 +416,22 @@ function gameLoop() {
     drawBossHP();
     drawBox();
     drawSoul();
-    drawBullets();
+
+    if (currentAttack === "bulletRain") {
+        drawBulletRain();
+        updateBulletRain();
+    } else if (currentAttack === "boneWave") {
+        drawBoneWave();
+        updateBoneWave();
+    } else if (currentAttack === "beamLine") {
+        drawBeamLine();
+        updateBeamLine();
+    } else if (currentAttack === "boneWall") {
+        drawBoneWall();
+        updateBoneWall();
+    }
 
     updateSoul();
-    updateBullets();
 
     if (inAttackPhase) {
         attackTimer++;
@@ -300,7 +445,6 @@ function gameLoop() {
 
 window.addEventListener("keydown", e => {
     keys[e.key] = true;
-
     if (e.key === "1") soulMode = "red";
     if (e.key === "2") soulMode = "blue";
     if (e.key === "3") soulMode = "green";
@@ -315,20 +459,28 @@ window.addEventListener("keyup", e => {
     keys[e.key] = false;
 });
 
+btnStart.onclick = () => {
+    if (battleStarted) return;
+    battleStarted = true;
+    try { music.play(); } catch (e) {}
+    setText(boss.name + " emerges from the darkness.");
+    startEnemyAttack();
+};
+
 btnFight.onclick = () => {
-    if (inAttackPhase || playerHP <= 0 || boss.hp <= 0) return;
+    if (!battleStarted || inAttackPhase || playerHP <= 0 || boss.hp <= 0) return;
     setText("You attack!");
     enemyTakeDamage(12);
 };
 
 btnAct.onclick = () => {
-    if (inAttackPhase || playerHP <= 0 || boss.hp <= 0) return;
+    if (!battleStarted || inAttackPhase || playerHP <= 0 || boss.hp <= 0) return;
     setText("You taunt " + boss.name + ". It grins.");
     startEnemyAttack();
 };
 
 btnItem.onclick = () => {
-    if (inAttackPhase || playerHP <= 0 || boss.hp <= 0) return;
+    if (!battleStarted || inAttackPhase || playerHP <= 0 || boss.hp <= 0) return;
     if (playerHP >= 20) {
         setText("You don't need healing.");
         return;
@@ -340,17 +492,19 @@ btnItem.onclick = () => {
 };
 
 btnMercy.onclick = () => {
-    if (inAttackPhase || playerHP <= 0 || boss.hp <= 0) return;
+    if (!battleStarted || inAttackPhase || playerHP <= 0 || boss.hp <= 0) return;
     if (boss.hp <= 20) {
         setText("You spared " + boss.name + ".");
         inAttackPhase = false;
+        currentAttack = null;
+        clearAttacks();
     } else {
         setText(boss.name + " refuses.");
         startEnemyAttack();
     }
 };
 
-setText(boss.name + " emerges from the darkness.");
+setText("Press START to begin the battle.");
 gameLoop();
 </script>
 
