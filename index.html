@@ -1,85 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Undertale Battle Engine</title>
+<style>
+    body {
+        background: black;
+        color: white;
+        font-family: "Courier New", monospace;
+        margin: 0;
+        overflow: hidden;
+    }
+    #game {
+        display: block;
+        margin: 0 auto;
+        background: black;
+        border: 2px solid white;
+    }
+    #ui {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 40px;
+        width: 400px;
+        text-align: center;
+        color: white;
+    }
+    .buttons {
+        display: flex;
+        justify-content: space-around;
+        margin-top: 10px;
+    }
+    button {
+        background: black;
+        color: white;
+        border: 2px solid white;
+        padding: 4px 10px;
+        cursor: pointer;
+        font-family: "Courier New", monospace;
+    }
+    button:focus {
+        outline: none;
+    }
+</style>
+</head>
+<body>
+
+<canvas id="game" width="400" height="300"></canvas>
+
+<div id="ui">
+    <div id="status">HP: <span id="hp">20</span> / 20</div>
+    <div id="text"></div>
+    <div class="buttons">
+        <button id="fight">FIGHT</button>
+        <button id="act">ACT</button>
+        <button id="item">ITEM</button>
+        <button id="mercy">MERCY</button>
+    </div>
+</div>
+
 <script>
-  const canvas = document.getElementById("game");
-  const ctx = canvas.getContext("2d");
+/* ============================================================
+   CORE VARIABLES
+============================================================ */
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-  const hpSpan = document.getElementById("hp");
-  const textBox = document.getElementById("text");
+const hpSpan = document.getElementById("hp");
+const textBox = document.getElementById("text");
 
-  const btnFight = document.getElementById("fight");
-  const btnAct = document.getElementById("act");
-  const btnItem = document.getElementById("item");
-  const btnMercy = document.getElementById("mercy");
+const btnFight = document.getElementById("fight");
+const btnAct = document.getElementById("act");
+const btnItem = document.getElementById("item");
+const btnMercy = document.getElementById("mercy");
 
-  // Player soul
-  const soul = {
+/* ============================================================
+   SOUL MODES (1–8)
+============================================================ */
+let soulMode = "red"; // default
+
+const soulColors = {
+    red: "#ff0000",
+    blue: "#0000ff",
+    green: "#00ff00",
+    yellow: "#ffff00",
+    purple: "#800080",
+    cyan: "#00ffff",
+    orange: "#ff8000",
+    white: "#ffffff"
+};
+
+/* ============================================================
+   PLAYER SOUL
+============================================================ */
+const soul = {
     x: 200,
     y: 200,
     size: 8,
-    speed: 3
-  };
+    speed: 3,
+    vy: 0, // for blue gravity
+    onLine: false // for purple mode
+};
 
-  // Boss object
-  const boss = {
+/* ============================================================
+   BOSS
+============================================================ */
+const boss = {
     name: "VOIDLING",
-    hp: 60,
-    maxHP: 60,
+    hp: 120,
+    maxHP: 120,
     x: 200,
-    y: 60
-  };
+    y: 60,
+    dir: 1
+};
 
-  // Bullets
-  const bullets = [];
-  const bulletSpeed = 2;
-
-  // Battle box
-  const box = {
+/* ============================================================
+   BATTLE BOX
+============================================================ */
+const box = {
     x: 80,
     y: 80,
     w: 240,
     h: 140
-  };
+};
 
-  let keys = {};
-  let playerHP = 20;
-  let inAttackPhase = false;
-  let attackTimer = 0;
-  let attackDuration = 200;
+/* ============================================================
+   BULLETS
+============================================================ */
+const bullets = [];
+let keys = {};
+let playerHP = 20;
+let inAttackPhase = false;
+let attackTimer = 0;
+let attackDuration = 200;
 
-  function setText(msg) {
+/* ============================================================
+   TEXT
+============================================================ */
+function setText(msg) {
     textBox.textContent = msg;
-  }
+}
 
-  function resetBullets() {
+/* ============================================================
+   BULLET PATTERNS
+============================================================ */
+function resetBullets() {
     bullets.length = 0;
-    for (let i = 0; i < 12; i++) {
-      bullets.push({
-        x: box.x + Math.random() * box.w,
-        y: box.y - 10,
-        r: 4
-      });
-    }
-  }
 
-  function startEnemyAttack() {
+    for (let i = 0; i < 12; i++) {
+        bullets.push({
+            x: box.x + Math.random() * box.w,
+            y: box.y - 10,
+            r: 4,
+            color: "white",
+            type: Math.random() < 0.5 ? "white" : (Math.random() < 0.5 ? "blue" : "orange")
+        });
+    }
+}
+
+/* ============================================================
+   ATTACK PHASE
+============================================================ */
+function startEnemyAttack() {
     inAttackPhase = true;
     attackTimer = 0;
     resetBullets();
     setText(boss.name + " attacks!");
-  }
+}
 
-  function endEnemyAttack() {
+function endEnemyAttack() {
     inAttackPhase = false;
     setText("What will you do?");
-  }
+}
 
-  function drawBox() {
+/* ============================================================
+   DRAW FUNCTIONS
+============================================================ */
+function drawBox() {
     ctx.strokeStyle = "white";
     ctx.lineWidth = 2;
     ctx.strokeRect(box.x, box.y, box.w, box.h);
-  }
+}
 
-  function drawSoul() {
-    ctx.fillStyle = "red";
+function drawSoul() {
+    ctx.fillStyle = soulColors[soulMode];
     ctx.beginPath();
     ctx.moveTo(soul.x, soul.y);
     ctx.arc(soul.x - 3, soul.y - 3, soul.size / 2, 0, Math.PI * 2);
@@ -87,23 +191,22 @@
     ctx.lineTo(soul.x, soul.y + soul.size);
     ctx.closePath();
     ctx.fill();
-  }
+}
 
-  function drawBoss() {
+function drawBoss() {
     ctx.fillStyle = "white";
     ctx.font = "20px Courier New";
     ctx.textAlign = "center";
     ctx.fillText(boss.name, boss.x, boss.y - 20);
 
-    // Simple boss sprite (circle)
     ctx.beginPath();
     ctx.arc(boss.x, boss.y, 20, 0, Math.PI * 2);
     ctx.strokeStyle = "white";
     ctx.lineWidth = 2;
     ctx.stroke();
-  }
+}
 
-  function drawBossHP() {
+function drawBossHP() {
     const barX = 50;
     const barY = 20;
     const barW = 300;
@@ -121,72 +224,98 @@
     ctx.fillStyle = "white";
     ctx.font = "14px Courier New";
     ctx.fillText(`HP: ${boss.hp}/${boss.maxHP}`, barX + barW / 2, barY - 5);
-  }
+}
 
-  function drawBullets() {
-    ctx.fillStyle = "white";
+function drawBullets() {
     bullets.forEach(b => {
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-      ctx.fill();
+        ctx.fillStyle = b.type === "blue" ? "#0000ff" :
+                        b.type === "orange" ? "#ff8000" : "white";
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.fill();
     });
-  }
+}
 
-  function updateSoul() {
+/* ============================================================
+   SOUL MOVEMENT
+============================================================ */
+function updateSoul() {
     if (!inAttackPhase) return;
 
-    if (keys["ArrowLeft"]) soul.x -= soul.speed;
-    if (keys["ArrowRight"]) soul.x += soul.speed;
-    if (keys["ArrowUp"]) soul.y -= soul.speed;
-    if (keys["ArrowDown"]) soul.y += soul.speed;
+    if (soulMode === "blue") {
+        soul.vy += 0.2;
+        soul.y += soul.vy;
+        if (keys["ArrowUp"]) soul.vy = -4;
+    } else {
+        if (keys["ArrowLeft"]) soul.x -= soul.speed;
+        if (keys["ArrowRight"]) soul.x += soul.speed;
+        if (keys["ArrowUp"]) soul.y -= soul.speed;
+        if (keys["ArrowDown"]) soul.y += soul.speed;
+    }
 
-    // Clamp to box
     soul.x = Math.max(box.x + soul.size, Math.min(soul.x, box.x + box.w - soul.size));
     soul.y = Math.max(box.y + soul.size, Math.min(soul.y, box.y + box.h - soul.size));
-  }
+}
 
-  function updateBullets() {
+/* ============================================================
+   BULLET UPDATES
+============================================================ */
+function updateBullets() {
     if (!inAttackPhase) return;
 
     bullets.forEach(b => {
-      b.y += bulletSpeed;
-      if (b.y > box.y + box.h + 10) {
-        b.y = box.y - 10;
-        b.x = box.x + Math.random() * box.w;
-      }
+        b.y += 2;
 
-      const dx = b.x - soul.x;
-      const dy = b.y - soul.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < b.r + soul.size / 2) {
-        takeDamage(1);
-      }
+        if (b.y > box.y + box.h + 10) {
+            b.y = box.y - 10;
+            b.x = box.x + Math.random() * box.w;
+        }
+
+        const dx = b.x - soul.x;
+        const dy = b.y - soul.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < b.r + soul.size / 2) {
+            if (b.type === "blue" && !keys["ArrowUp"] && !keys["ArrowDown"] && !keys["ArrowLeft"] && !keys["ArrowRight"]) {
+                takeDamage(1);
+            } else if (b.type === "orange" && (keys["ArrowUp"] || keys["ArrowDown"] || keys["ArrowLeft"] || keys["ArrowRight"])) {
+                takeDamage(1);
+            } else if (b.type === "white") {
+                takeDamage(1);
+            }
+        }
     });
-  }
+}
 
-  function takeDamage(amount) {
+/* ============================================================
+   DAMAGE
+============================================================ */
+function takeDamage(amount) {
     playerHP -= amount;
     if (playerHP < 0) playerHP = 0;
     hpSpan.textContent = playerHP;
     if (playerHP <= 0) {
-      setText("You died.");
-      inAttackPhase = false;
+        setText("You died.");
+        inAttackPhase = false;
     }
-  }
+}
 
-  function enemyTakeDamage(amount) {
+function enemyTakeDamage(amount) {
     boss.hp -= amount;
     if (boss.hp < 0) boss.hp = 0;
 
     if (boss.hp <= 0) {
-      setText("You defeated " + boss.name + "!");
-      inAttackPhase = false;
+        setText("You defeated " + boss.name + "!");
+        inAttackPhase = false;
     } else {
-      startEnemyAttack();
+        startEnemyAttack();
     }
-  }
+}
 
-  function gameLoop() {
+/* ============================================================
+   GAME LOOP
+============================================================ */
+function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     drawBoss();
@@ -199,56 +328,79 @@
     updateBullets();
 
     if (inAttackPhase) {
-      attackTimer++;
-      if (attackTimer > attackDuration) {
-        endEnemyAttack();
-      }
+        attackTimer++;
+        if (attackTimer > attackDuration) {
+            endEnemyAttack();
+        }
     }
 
     requestAnimationFrame(gameLoop);
-  }
+}
 
-  // Input
-  window.addEventListener("keydown", e => keys[e.key] = true);
-  window.addEventListener("keyup", e => keys[e.key] = false);
+/* ============================================================
+   INPUT
+============================================================ */
+window.addEventListener("keydown", e => {
+    keys[e.key] = true;
 
-  // Buttons
-  btnFight.onclick = () => {
+    if (e.key === "1") soulMode = "red";
+    if (e.key === "2") soulMode = "blue";
+    if (e.key === "3") soulMode = "green";
+    if (e.key === "4") soulMode = "yellow";
+    if (e.key === "5") soulMode = "purple";
+    if (e.key === "6") soulMode = "cyan";
+    if (e.key === "7") soulMode = "orange";
+    if (e.key === "8") soulMode = "white";
+});
+
+window.addEventListener("keyup", e => {
+    keys[e.key] = false;
+});
+
+/* ============================================================
+   BUTTONS
+============================================================ */
+btnFight.onclick = () => {
     if (inAttackPhase || playerHP <= 0 || boss.hp <= 0) return;
     setText("You attack!");
-    enemyTakeDamage(8);
-  };
+    enemyTakeDamage(10);
+};
 
-  btnAct.onclick = () => {
+btnAct.onclick = () => {
     if (inAttackPhase || playerHP <= 0 || boss.hp <= 0) return;
-    setText("You tell " + boss.name + " a joke. It does not laugh.");
+    setText("You talk to " + boss.name + ". It stares.");
     startEnemyAttack();
-  };
+};
 
-  btnItem.onclick = () => {
+btnItem.onclick = () => {
     if (inAttackPhase || playerHP <= 0 || boss.hp <= 0) return;
     if (playerHP >= 20) {
-      setText("You don't need healing.");
-      return;
+        setText("You don't need healing.");
+        return;
     }
     setText("You ate a pie. HP restored.");
     playerHP = Math.min(20, playerHP + 10);
     hpSpan.textContent = playerHP;
     startEnemyAttack();
-  };
+};
 
-  btnMercy.onclick = () => {
+btnMercy.onclick = () => {
     if (inAttackPhase || playerHP <= 0 || boss.hp <= 0) return;
-    if (boss.hp <= 10) {
-      setText("You spared " + boss.name + ".");
-      inAttackPhase = false;
+    if (boss.hp <= 20) {
+        setText("You spared " + boss.name + ".");
+        inAttackPhase = false;
     } else {
-      setText(boss.name + " refuses.");
-      startEnemyAttack();
+        setText(boss.name + " refuses.");
+        startEnemyAttack();
     }
-  };
+};
 
-  // Init
-  setText(boss.name + " emerges from the darkness.");
-  gameLoop();
+/* ============================================================
+   INIT
+============================================================ */
+setText(boss.name + " emerges from the darkness.");
+gameLoop();
 </script>
+
+</body>
+</html>
