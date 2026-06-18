@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Undertale Battle Engine - Boss Fixed</title>
+<title>Undertale Battle Engine - HP Bar Fixed</title>
 <style>
     body {
         background: black;
@@ -409,7 +409,7 @@ function drawBox() {
 function loop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    drawBoss();
+    drawBoss();   // ⭐ Boss + HP bar FIRST
     drawBox();
     drawSoul();
 
