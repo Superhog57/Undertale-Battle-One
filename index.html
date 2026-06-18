@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Undertale Battle Engine - Fixed Version</title>
+<title>Undertale Battle Engine - Boss Fixed</title>
 <style>
     body {
         background: black;
@@ -99,8 +99,8 @@ const soul = {
 };
 
 const boss = {
-    hp: 100,
-    maxHP: 100,
+    hp: 300,
+    maxHP: 300,
     x: 400,
     y: 140,
     dir: 1
@@ -160,7 +160,7 @@ btnRestart.onclick = () => resetGame();
 // =========================
 btnFight.onclick = () => {
     if (!battleStarted || attackActive) return;
-    boss.hp -= 15;
+    boss.hp -= 25;
     if (boss.hp <= 0) {
         boss.hp = 0;
         setText("You defeated the boss!");
@@ -191,7 +191,7 @@ btnItem.onclick = () => {
 
 btnMercy.onclick = () => {
     if (!battleStarted || attackActive) return;
-    if (boss.hp <= 20) {
+    if (boss.hp <= 40) {
         setText("You spared the boss.");
         attackActive = false;
     } else {
@@ -326,7 +326,7 @@ function updateSoul() {
 }
 
 // =========================
-// DRAW SOUL (HEART FIXED)
+// DRAW SOUL (HEART)
 // =========================
 function drawSoul() {
     const px = Math.round(soul.x);
@@ -349,24 +349,49 @@ function drawSoul() {
 }
 
 // =========================
-// DRAW BOSS (FIXED)
+// DRAW BOSS + HP BAR
 // =========================
 function drawBoss() {
+    // Move boss
     boss.x += boss.dir * 2;
     if (boss.x < 160 || boss.x > canvas.width - 160) boss.dir *= -1;
 
+    // Boss name
     ctx.fillStyle = "white";
     ctx.font = "26px Courier New";
     ctx.textAlign = "center";
-    ctx.fillText("BOSS", boss.x, boss.y - 32);
+    ctx.fillText("VOIDLING", boss.x, boss.y - 40);
 
+    // Boss sprite
     ctx.fillStyle = "white";
     ctx.fillRect(boss.x - 32, boss.y - 32, 64, 64);
 
+    // Eyes
     ctx.fillStyle = "black";
-    ctx.fillRect(boss.x - 20, boss.y - 20, 16, 16);
-    ctx.fillRect(boss.x + 4, boss.y - 20, 16, 16);
-    ctx.fillRect(boss.x - 12, boss.y + 4, 24, 12);
+    ctx.fillRect(boss.x - 18, boss.y - 18, 12, 12);
+    ctx.fillRect(boss.x + 6, boss.y - 18, 12, 12);
+
+    // Mouth
+    ctx.fillRect(boss.x - 12, boss.y + 6, 24, 10);
+
+    // HP BAR
+    const barX = 100;
+    const barY = 60;
+    const barW = 600;
+    const barH = 18;
+
+    const hpPercent = boss.hp / boss.maxHP;
+    const hpWidth = barW * hpPercent;
+
+    ctx.strokeStyle = "white";
+    ctx.strokeRect(barX, barY, barW, barH);
+
+    ctx.fillStyle = "yellow";
+    ctx.fillRect(barX, barY, hpWidth, barH);
+
+    ctx.fillStyle = "white";
+    ctx.font = "18px Courier New";
+    ctx.fillText(`HP: ${boss.hp} / ${boss.maxHP}`, barX + barW / 2, barY - 8);
 }
 
 // =========================
