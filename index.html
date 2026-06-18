@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Undertale Battle Engine - Clean Version</title>
+<title>Undertale Battle Engine - NEW</title>
 <style>
     body {
         background: black;
@@ -203,7 +203,6 @@ btnMercy.onclick = () => {
 // =========================
 // ATTACK SYSTEM
 // =========================
-// ⭐ Bone Wall REMOVED
 const attackList = ["rain", "wave"];
 
 function startAttack() {
@@ -326,4 +325,67 @@ function updateSoul() {
 }
 
 // =========================
-// DRAW SOUL (NEW HEART
+// DRAW SOUL (NEW HEART)
+// =========================
+function drawSoul() {
+    const px = Math.round(soul.x);
+    const py = Math.round(soul.y);
+    const s = 3;
+
+    ctx.fillStyle = "red";
+
+    ctx.fillRect(px - 3*s, py - 2*s, 2*s, 2*s);
+    ctx.fillRect(px + s, py - 2*s, 2*s, 2*s);
+
+    ctx.fillRect(px - 4*s, py - s, 4*s, 2*s);
+    ctx.fillRect(px, py - s, 4*s, 2*s);
+
+    ctx.fillRect(px - 4*s, py + s, 8*s, 2*s);
+
+    ctx.fillRect(px - 3*s, py + 3*s, 6*s, 2*s);
+
+    ctx.fillRect(px - 2*s, py + 5*s, 4*s, 2*s);
+}
+
+// =========================
+// DRAW BOX
+// =========================
+function drawBox() {
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(box.x, box.y, box.w, box.h);
+}
+
+// =========================
+// GAME LOOP
+// =========================
+function loop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawBox();
+    drawSoul();
+
+    if (attackActive) {
+        attackTimer++;
+
+        if (currentAttack === "rain") {
+            updateRain();
+            drawRain();
+        }
+        if (currentAttack === "wave") {
+            updateWave();
+            drawWave();
+        }
+
+        if (attackTimer > 240) endAttack();
+    }
+
+    updateSoul();
+    requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+
+</body>
+</html>
